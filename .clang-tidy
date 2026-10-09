@@ -1,0 +1,12 @@
+# Focus on correctness and efficiency; naming/API redesign is outside this gate.
+Checks: >-
+  -*,
+  clang-analyzer-*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  performance-*,
+  portability-*,
+  -portability-avoid-pragma-once
+WarningsAsErrors: '*'
+HeaderFilterRegex: '(src|tests)/'
+FormatStyle: file

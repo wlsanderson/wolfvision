@@ -66,3 +66,9 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+.ruff_cache/
+
+# Python tooling (managed with uv)
+.venv/
+__pycache__/
+*.py[cod]
