@@ -27,6 +27,10 @@ are confirmed intended choices. The user has now specified:
 - Camera: Luckfox SC3336 3 MP camera.
 - Airborne radio connection: E103-RTL8812CU over USB; Luckfox must use USB host mode.
 
+The user confirmed the Luckfox boards are still on order and unavailable.
+Current SDK setup and compilation run entirely on the laptop; flashing, boot,
+and physical integration must wait for the hardware.
+
 The board/radio/camera integration and throughput remain unverified. The exact
 SDK revision corresponding to the downloaded image has not been established.
 
@@ -55,13 +59,18 @@ qualification are not confirmed v0.1 acceptance requirements.
 - Keep sources, serialization, transport, and hardware adapters separate. Share
   the tested core with future hardware adapters instead of creating parallel
   simulation/hardware codebases.
-- Work in Ubuntu/WSL (user reports Ubuntu 24.04.5 with WSL 2). The repository was
-  created/cloned as `wolfvision`; its remote URL has not been independently verified.
-- Keep the existing Ubuntu host environment. Earlier advice suggested separate
-  Ubuntu 22.04 WSL or vendor Docker for SDK builds. Current
+- The user moved from Ubuntu 24.04 to Ubuntu 22.04 for SDK setup. On October 9,
+  2026, this workspace reported Ubuntu 22.04.5 LTS, x86-64, and a WSL 2 kernel.
+  The repository is at `/home/wlsanderson/wolfvision`; its remote URL has not
+  been independently verified.
+- Use the current Ubuntu 22.04 WSL environment for SDK setup. Current
   [vendor documentation](https://wiki.luckfox.com/Luckfox-Pico-Pro-Max/SDK/)
-  specifies Ubuntu 22.04 x86-64; neither that environment nor an SDK checkout
-  is verified. Keep the vendor SDK outside the Wolfvision application repository.
+  specifies Ubuntu 22.04 x86-64, now verified for this workspace. The SDK checkout
+  is now verified at `/home/wlsanderson/sdk/luckfox-pico`, outside the Wolfvision
+  repository. Board configuration selection and supplied compiler startup are
+  verified. The user reported a successful full SDK build, and generated images
+  were independently inspected; board execution remains unverified. The
+  resumable setup steps are in [LUCKFOX_SDK.md](LUCKFOX_SDK.md).
 - Recommended SDK family: [LuckfoxTECH/luckfox-pico](https://github.com/LuckfoxTECH/luckfox-pico),
   configured for `RV1106_Luckfox_Pico_Pro_Max`, `SD_CARD`, and `Buildroot`.
   The current shared board configuration is
@@ -100,6 +109,59 @@ Usage is in [SIMULATION.md](SIMULATION.md), wire rules in
 
 ## Verification evidence
 
+SDK setup inspection on October 9, 2026: checkout commit
+`824b817f889c2cbff1d48fcdb18ab494a68f69d1`, with a clean tracked working tree.
+The user reported successful `build_select_board`; `.BoardConfig.mk` was
+independently inspected and resolves to
+`BoardConfig-SD_CARD-Buildroot-RV1106_Luckfox_Pico_Pro_Max-IPC.mk`.
+The supplied `arm-rockchip830-linux-uclibcgnueabihf-gcc` and `g++` both ran and
+reported GCC 8.3.0 (crosstool-NG 1.24.0). The inspected commit is now the
+verified compilation baseline; firmware boot and compatibility with the
+downloaded `250607` image remain unverified.
+
+The first SDK build attempt reached Buildroot rootfs preparation but stopped
+at its dependency check because PATH contained whitespace. This was reported
+by the user. A build-scoped PATH
+containing only Linux system directories and the SDK compiler directory was
+checked to contain no whitespace and to resolve host make/GCC/G++ and both
+ARM compilers. The user subsequently reported that all builds succeeded. An
+independent inspection found nonempty `boot.img`, `rootfs.img`, `uboot.img`,
+`idblock.img`, `env.img`, `userdata.img`, `update.img`, and `sd_update.img` under
+`/home/wlsanderson/sdk/luckfox-pico/output/image/`. `file` identifies `rootfs.img`
+as ext4. The terminal success output was reported by the user; no saved build
+log was found in the inspected locations. The SDK also archived images and
+`build_info.txt` under
+`IMAGE/IPC_SD_CARD_BUILDROOT_RV1106_LUCKFOX_PICO_PRO_MAX_20261009.1910_RELEASE_TEST/`;
+the build metadata confirms RV1106, SD card, ext4/Buildroot, and the selected
+uClibc toolchain. This records successful SDK compilation
+with artifact evidence, not boot or physical hardware validation; see
+[SDK troubleshooting](LUCKFOX_SDK.md#5-build-the-sdk-image).
+
+Wolfvision cross-build on October 9, 2026: CMake configured a separate
+`build-luckfox` Release build for Linux/ARM with the SDK's GCC 8.3.0 C++ compiler
+and `BUILD_TESTING=OFF`. All three shared libraries and `simulation_tx` /
+`simulation_rx` compiled and linked successfully without source changes.
+`file` and `readelf` confirm ARM 32-bit EABI5 hard-float executables, using
+`/lib/ld-uClibc.so.0`; both require `libstdc++.so.6`, `libgcc_s.so.1`, and
+`libc.so.0`. These library names and the loader are present in the SDK-generated
+rootfs staging directory. Runtime compatibility and board execution remain
+unverified; ARM tests were not executed on the x86-64 laptop. These are the
+existing prerecorded-video/synthetic-UART applications, not live camera adapters.
+
+Camera preparation on October 9, 2026: reviewed the installed SDK's small
+VI-to-VENC/RTSP example, maintained VENC/ISP helpers, encoder headers, sensor
+device-tree configuration, and generated rootfs. The SC3336 module and
+`sc3336_CMK-OT2119-PC1_30IRC-F16.json` IQ file are packaged. Independently
+cross-compiled and linked the unchanged `simple_vi_bind_venc_rtsp.c` against
+SDK-generated media headers/libraries; the ARM binary is at
+`build-luckfox-camera-review/simple_vi_bind_venc_rtsp`. No example was executed.
+[LUCKFOX_CAMERA.md](LUCKFOX_CAMERA.md) records the API/source mapping, proposed
+bounded adapter design, and future board test procedure. AUD/SPS/PPS behavior,
+pack/offset/frame semantics, PTS clock compatibility, and camera operation remain
+unverified. Live inputs require a protocol/profile update because existing WVSM
+and WVTM flags explicitly identify simulation. No adapter or wire changes have
+been implemented.
+
 The original telemetry-only milestone was built/tested on October 8, 2026,
 including golden packet bytes, malformed inputs, sequence cases, CSV values,
 and finite localhost reception. Its apps, CLI parser, unbounded sequence tracker,
@@ -132,9 +194,14 @@ The sustained fixture uses 40 loops / 2400 access units at 240 units/s, roughly
 6195-byte peak retained payload and bounded sequence history; settled Linux RSS
 growth also passed. This is not a long-duration soak or high-resolution throughput
 qualification. Captures/reports go into fresh `build/simulation-*` directories.
-No physical camera, actual UART, board build/execution, or radio integration has
-been verified. Installed system FFmpeg/FFprobe are now available in this workspace;
-Python dependencies remain managed separately by uv.
+No physical camera, actual UART, board execution, or radio integration has
+been verified. SDK and Wolfvision ARM compilation are recorded above.
+System FFmpeg/FFprobe were available in the earlier workspace;
+Python dependencies remain managed separately by uv. These test results describe
+the earlier environment. After the Ubuntu 22.04 move, development tools were
+initially missing. Subsequent SDK setup restored host `make`, GCC/G++, and
+CMake, confirmed by executable lookup. The new workspace has not rerun the
+host tests; check uv and media-tool availability before running them.
 
 Formatting/lint setup was subsequently verified: the repository gate passed
 clang-format, clang-tidy, and Ruff checks after formatting the existing baseline
@@ -147,7 +214,7 @@ also passed. Formatting/lint requirements are recorded in `AGENTS.md`.
 
 | Area | Information still needed |
 | --- | --- |
-| Luckfox | Verify downloaded microSD image boots; identify matching SDK revision/toolchain, compiler/runtime compatibility, build environment |
+| Luckfox | SDK and ARM application compilation verified; verify board boot/runtime, downloaded-image compatibility, and firmware choice for first boot |
 | Camera/encoder | Validate selected SC3336 camera and vendor capture/H.264 APIs; choose resolution, frame rate, bitrate, keyframe policy |
 | UART | Source device, electrical levels, wiring, baud rate, framing, fields/units, acquisition rates |
 | Radio | Configure selected USB host connection; verify driver, USB power/cabling, wireless mode, transport mapping, channel/frequency, bandwidth, power, antennas |
@@ -155,9 +222,15 @@ also passed. Formatting/lint requirements are recorded in `AGENTS.md`.
 | Protocol/time | Hardware packet requirements, synchronization, cross-device latency measurement, FEC requirement |
 | Acceptance | Bench duration, decoded video/data criteria, latency/loss/recovery thresholds, power/thermal limits |
 
-Recommended next work is to boot/inspect the selected image, establish the
-matching SDK and a verified cross-build, then test the vendor SC3336/H.264 example
-before writing board adapters. The
+While the boards are on order, SDK image compilation and the Wolfvision ARM
+cross-build and the vendor-camera source review/example cross-build are complete.
+The proposed adapter and board bring-up steps are in
+[LUCKFOX_CAMERA.md](LUCKFOX_CAMERA.md). Portable normalization and live-input
+protocol work can proceed on the laptop; restore the host test environment as
+needed. When hardware arrives, select the
+firmware for first boot, verify boot/runtime compatibility, run the ARM
+applications, then test the vendor SC3336/H.264 example before writing board
+adapters. The
 [RKMPI examples](https://wiki.luckfox.com/Luckfox-Pico-Pro-Max/MPI/) explicitly
 list RV1106, Buildroot, and SC3336; these combinations remain untested here.
 The [USB guide](https://wiki.luckfox.com/Luckfox-Pico-Pro-Max/USB/) documents

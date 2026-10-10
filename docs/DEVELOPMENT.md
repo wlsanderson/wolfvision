@@ -146,6 +146,9 @@ target is Pico Max (256 MB), SC3336 camera, microSD image
 `Luckfox_Pico_ProMax_MicroSD_250607`, and USB host connection to E103-RTL8812CU.
 An SDK revision matching that image is not yet verified.
 
+See [Luckfox SDK setup](LUCKFOX_SDK.md) for the Ubuntu 22.04 dependency,
+checkout, board-selection, and compiler-check steps.
+
 Use the official [Luckfox Pico SDK](https://github.com/LuckfoxTECH/luckfox-pico)
 in a separate checkout, with the RV1106 Pro/Max, SD_CARD, Buildroot configuration.
 Luckfox documents Ubuntu 22.04 x86-64 as the

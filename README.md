@@ -45,6 +45,8 @@ See [testing](docs/DEVELOPMENT.md#testing) for the extended suite and tooling ch
 
 - [Simulation](docs/SIMULATION.md): run TX/RX manually, create input, inspect outputs, and inject faults.
 - [Development](docs/DEVELOPMENT.md): setup, tests, dependency troubleshooting, and source layout.
+- [Luckfox SDK setup](docs/LUCKFOX_SDK.md): resume SDK installation on Ubuntu 22.04 WSL.
+- [Luckfox camera preparation](docs/LUCKFOX_CAMERA.md): SC3336/H.264 API review, adapter plan, and future board checks.
 - [Formatting and linting](docs/DEVELOPMENT.md#formatting-and-linting): required checks for C++ and Python changes.
 - [Protocol](docs/PROTOCOL.md): wire fields, units, validation, sequence handling, and recovery.
 - [Project context](docs/PROJECT_CONTEXT.md): confirmed hardware goals, verification evidence, and open decisions.
